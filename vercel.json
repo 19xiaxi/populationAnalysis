@@ -1,9 +1,13 @@
 {
   "version": 2,
   "builds": [
-    { "src": "app.py", "use": "@vercel/python" }
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node",
+      "config": { "maxLambdaSize": "10mb" }
+    }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "app.py" }
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
