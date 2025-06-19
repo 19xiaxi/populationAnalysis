@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}中国人口变化趋势分析 (2005-2024){% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">首页</li>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8 mx-auto text-center">
+            <h1 class="mb-4">近20年中国人口变化趋势分析</h1>
+            <p class="lead">基于国家统计局2005-2024年人口数据的研究</p>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5>关键指标趋势</h5>
+                </div>
+                <div class="card-body">
+                    <div id="trendChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5>2024年人口状况</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="display-4 text-danger">6.77‰</div>
+                            <p>出生率</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="display-4 text-dark">7.76‰</div>
+                            <p>死亡率</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="display-4 text-danger">-0.99‰</div>
+                            <p>自然增长率</p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="progress" style="height: 30px;">
+                            <div class="progress-bar bg-success" style="width: 46.6%">出生率</div>
+                            <div class="progress-bar bg-dark" style="width: 53.4%">死亡率</div>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-center text-danger">人口负增长持续扩大</p>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5>分析结论</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>出生率持续下降，2024年仅为6.77‰</li>
+                        <li>死亡率稳定在7.0-7.8‰区间</li>
+                        <li>2021年首次出现人口负增长</li>
+                        <li>自然增长率与出生率强相关(r=0.92)</li>
+                        <li>回归模型解释力达98.7%(R²=0.987)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-header">描述性统计</div>
+                <div class="card-body">
+                    <p class="card-text">计算人口出生率、死亡率、自然增长率的描述性统计量</p>
+                    <a href="/descriptive" class="btn btn-light">查看详情</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">相关性分析</div>
+                <div class="card-body">
+                    <p class="card-text">分析各人口指标间的相关关系</p>
+                    <a href="/correlation" class="btn btn-light">查看详情</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-header">回归分析</div>
+                <div class="card-body">
+                    <p class="card-text">建立回归模型预测人口自然增长率</p>
+                    <a href="/regression" class="btn btn-light">查看详情</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // 获取图表数据
+        fetch('/chart_data')
+            .then(response => response.json())
+            .then(data => {
+                // 渲染趋势图
+                const trendChart = echarts.init(document.getElementById('trendChart'));
+                const option = {
+                    title: { text: '人口指标变化趋势 (2005-2024)' },
+                    tooltip: { trigger: 'axis' },
+                    legend: { data: ['出生率', '死亡率', '自然增长率'] },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'category', data: data.years.reverse() },
+                    yAxis: { type: 'value', name: '千分比' },
+                    series: [
+                        { name: '出生率', type: 'line', data: data.birth_rates.reverse(),
+                         lineStyle: { color: '#dc3545' }, itemStyle: { color: '#dc3545' }},
+                        { name: '死亡率', type: 'line', data: data.death_rates.reverse(),
+                         lineStyle: { color: '#495057' }, itemStyle: { color: '#495057' }},
+                        { name: '自然增长率', type: 'line', data: data.growth_rates.reverse(),
+                         lineStyle: { color: '#0d6efd' }, itemStyle: { color: '#0d6efd' }}
+                    ]
+                };
+                trendChart.setOption(option);
+
+                // 响应窗口变化
+                window.addEventListener('resize', () => {
+                    trendChart.resize();
+                });
+            });
+    </script>
+{% endblock %}

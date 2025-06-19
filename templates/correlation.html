@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+
+{% block title %}相关分析 - 人口数据分析与预测系统{% endblock %}
+
+{% block head_extra %}
+<style>
+    .correlation-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        margin-bottom: 25px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .correlation-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+
+    .card-header-correlation {
+        border-radius: 12px 12px 0 0 !important;
+        font-weight: 600;
+        padding: 15px 20px;
+    }
+
+    .correlation-badge {
+        padding: 7px 12px;
+        border-radius: 50px;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .correlation-table th {
+        background-color: #2c6fbb;
+        color: white;
+    }
+
+    .correlation-value {
+        font-weight: 600;
+    }
+
+    .positive-correlation {
+        color: #27ae60;
+    }
+
+    .negative-correlation {
+        color: #e74c3c;
+    }
+
+    .neutral-correlation {
+        color: #7f8c8d;
+    }
+
+    .scatter-matrix-container {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">相关性分析</li>
+{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold text-primary">人口指标相关分析</h1>
+        <p class="lead text-muted">探索人口出生率、死亡率和自然增长率之间的相互依赖关系与内在联系</p>
+    </div>
+
+    <div class="row">
+        <!-- 相关系数矩阵 -->
+        <div class="col-lg-6 mb-4">
+            <div class="correlation-card">
+                <div class="card-header-correlation bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-table me-2"></i>相关系数矩阵</h4>
+                </div>
+                <div class="card-body">
+                    {% if corr_data and corr_data.corr_matrix %}
+                    <div class="table-responsive">
+                        <table class="table table-hover correlation-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">指标</th>
+                                    <th scope="col" class="text-center">出生率</th>
+                                    <th scope="col" class="text-center">死亡率</th>
+                                    <th scope="col" class="text-center">自然增长率</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for col1 in ['birth_rate', 'death_rate', 'growth_rate'] %}
+                                <tr>
+                                    <th scope="row">
+                                        {% if col1 == 'birth_rate' %}
+                                            <i class="fas fa-baby me-2 text-danger"></i>出生率
+                                        {% elif col1 == 'death_rate' %}
+                                            <i class="fas fa-cross me-2 text-dark"></i>死亡率
+                                        {% else %}
+                                            <i class="fas fa-chart-line me-2 text-primary"></i>自然增长率
+                                        {% endif %}
+                                    </th>
+                                    {% for col2 in ['birth_rate', 'death_rate', 'growth_rate'] %}
+                                        {% set corr_value = corr_data.corr_matrix[col1][col2] %}
+                                        <td class="text-center">
+                                            <span class="correlation-value
+                                                {% if corr_value > 0.7 %}positive-correlation
+                                                {% elif corr_value < -0.7 %}negative-correlation
+                                                {% else %}neutral-correlation{% endif %}">
+                                                {{ "%.3f"|format(corr_value) }}
+                                            </span>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>无法加载相关系数矩阵数据
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6><i class="fas fa-info-circle me-2 text-primary"></i>相关系数解读指南</h6>
+                        <p class="mb-2">相关系数范围从-1到+1，表示变量间的线性相关强度：</p>
+                        <div class="d-flex justify-content-between">
+                            <span class="badge bg-success correlation-badge">+1.0 强正相关</span>
+                            <span class="badge bg-warning correlation-badge">0.0 无相关</span>
+                            <span class="badge bg-danger correlation-badge">-1.0 强负相关</span>
+                        </div>
+                        <ul class="mt-2 small">
+                            <li><strong>强正相关 (>0.7)</strong>：一个指标增加，另一个也倾向于增加</li>
+                            <li><strong>强负相关 (<-0.7)</strong>：一个指标增加，另一个倾向于减少</li>
+                            <li><strong>弱相关 (-0.3~0.3)</strong>：线性关系较弱或不存在</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 散点图矩阵 -->
+        <div class="col-lg-6 mb-4">
+            <div class="correlation-card">
+                <div class="card-header-correlation bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-chart-scatter me-2"></i>散点图矩阵</h4>
+                </div>
+                <div class="card-body">
+                    <div id="scatterMatrixChart" class="scatter-matrix-container"></div>
+
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6><i class="fas fa-lightbulb me-2 text-success"></i>图表解读指南</h6>
+                        <p>散点图矩阵直观呈现变量间的关系模式：</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="me-2" style="width:20px;height:20px;background:#5470C6;border-radius:50%;"></div>
+                                    <span>每个点代表一年的数据</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="width:20px;height:3px;background:#27ae60;"></div>
+                                    <span class="ms-2">上升趋势 = 正相关</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="width:20px;height:3px;background:#e74c3c;"></div>
+                                    <span class="ms-2">下降趋势 = 负相关</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div style="width:20px;height:3px;background:#7f8c8d; opacity:0.5;"></div>
+                                    <span class="ms-2">无趋势 = 无相关</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 相关性检验结果 -->
+    <div class="correlation-card">
+        <div class="card-header-correlation bg-info text-white">
+            <h4 class="mb-0"><i class="fas fa-flask me-2"></i>相关性统计检验</h4>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">
+                <i class="fas fa-info-circle me-2"></i>以下为出生率、死亡率与自然增长率之间的相关性统计检验结果
+            </p>
+
+            {% if corr_data and corr_data.p_values %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>变量关系</th>
+                            <th>相关系数 (r)</th>
+                            <th>P值</th>
+                            <th>统计显著性</th>
+                            <th>实际意义</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-baby me-2 text-danger"></i>出生率 vs
+                                    <i class="fas fa-cross ms-2 me-2 text-dark"></i>死亡率
+                                </div>
+                            </td>
+                            <td class="correlation-value neutral-correlation">
+                                {{ corr_data.corr_matrix.birth_rate.death_rate|round(3) }}
+                            </td>
+                            <td>{{ corr_data.p_values.birth_rate_death_rate|round(4) }}</td>
+                            <td>
+                                <span class="badge {{ 'bg-success' if corr_data.p_values.birth_rate_death_rate < 0.05 else 'bg-warning' }} correlation-badge">
+                                    {{ '显著 (p < 0.05)' if corr_data.p_values.birth_rate_death_rate < 0.05 else '不显著' }}
+                                </span>
+                            </td>
+                            <td class="small">
+                                {% if corr_data.p_values.birth_rate_death_rate < 0.05 %}
+                                    出生率与死亡率存在统计显著关系
+                                {% else %}
+                                    无显著统计关系
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-baby me-2 text-danger"></i>出生率 vs
+                                    <i class="fas fa-chart-line ms-2 me-2 text-primary"></i>自然增长率
+                                </div>
+                            </td>
+                            <td class="correlation-value positive-correlation">
+                                {{ corr_data.corr_matrix.birth_rate.growth_rate|round(3) }}
+                            </td>
+                            <td>{{ corr_data.p_values.birth_rate_growth_rate|round(4) }}</td>
+                            <td>
+                                <span class="badge bg-success correlation-badge">
+                                    显著 (p < 0.05)
+                                </span>
+                            </td>
+                            <td class="small">
+                                出生率对自然增长率有极强正向影响
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-cross me-2 text-dark"></i>死亡率 vs
+                                    <i class="fas fa-chart-line ms-2 me-2 text-primary"></i>自然增长率
+                                </div>
+                            </td>
+                            <td class="correlation-value negative-correlation">
+                                {{ corr_data.corr_matrix.death_rate.growth_rate|round(3) }}
+                            </td>
+                            <td>{{ corr_data.p_values.death_rate_growth_rate|round(4) }}</td>
+                            <td>
+                                <span class="badge bg-success correlation-badge">
+                                    显著 (p < 0.05)
+                                </span>
+                            </td>
+                            <td class="small">
+                                死亡率对自然增长率有较强负面影响
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 p-3 bg-light rounded">
+                <h6><i class="fas fa-graduation-cap me-2 text-info"></i>统计术语解释</h6>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <h6 class="fw-bold">相关系数 (r)</h6>
+                            <p class="small mb-0">衡量两个变量间线性关系强度的指标，范围从-1到+1</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <h6 class="fw-bold">P值</h6>
+                            <p class="small mb-0">判断关系是否显著的指标，P值 < 0.05 通常表示统计显著</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <h6 class="fw-bold">统计显著性</h6>
+                            <p class="small mb-0">表示观察到的关系不太可能是随机发生的</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>暂无相关性检验的详细数据
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var scatterMatrixChart = echarts.init(document.getElementById('scatterMatrixChart'));
+
+            fetch('{{ url_for("chart_data_for_scatter") }}')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        console.error('获取散点图数据时出错:', data.error);
+                        document.getElementById('scatterMatrixChart').innerHTML = `
+                            <div class="alert alert-danger p-4 text-center">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                <h5>加载图表数据失败</h5>
+                                <p class="mb-0">${data.error}</p>
+                            </div>`;
+                        return;
+                    }
+
+                    const seriesData = data.scatter_data;
+                    const fields = data.fields;
+                    if (!seriesData || !fields || fields.length === 0) {
+                        console.error('散点图数据格式不正确或为空');
+                        document.getElementById('scatterMatrixChart').innerHTML = `
+                            <div class="alert alert-warning p-4 text-center">
+                                <i class="fas fa-exclamation-circle fa-2x mb-3"></i>
+                                <h5>数据格式错误</h5>
+                                <p class="mb-0">图表数据格式不正确或为空</p>
+                            </div>`;
+                        return;
+                    }
+
+                    // 将 fields 转换为 ECharts schema 格式
+                    const schema = fields.map(fieldName => ({ name: fieldName }));
+                    const CATEGORY_DIM_COUNT = schema.length;
+
+                    function retrieveData(dataBox, dimX, dimY) {
+                        var result = [];
+                        for (var i = 0; i < dataBox.length; i++) {
+                            var item = dataBox[i];
+                            var newItem = [];
+                            if (dimX < item.length && dimY < item.length) {
+                                newItem.push(item[dimX]);
+                                newItem.push(item[dimY]);
+                                result.push(newItem);
+                            }
+                        }
+                        return result;
+                    }
+
+                    var series = [];
+                    let xAxisList = [];
+                    let yAxisList = [];
+                    let gridIdx = 0;
+                    const axisLabelFontSize = 10;
+                    var grids = [];
+
+                    for (let i = 0; i < CATEGORY_DIM_COUNT; i++) {
+                        for (let j = 0; j < CATEGORY_DIM_COUNT; j++) {
+                            const gridTop = (i / CATEGORY_DIM_COUNT * 85 + 10) + '%';
+                            const gridLeft = (j / CATEGORY_DIM_COUNT * 90 + 8) + '%';
+                            const gridWidth = (90 / CATEGORY_DIM_COUNT - 10) + '%';
+                            const gridHeight = (85 / CATEGORY_DIM_COUNT - 12) + '%';
+
+                            grids.push({
+                                top: gridTop,
+                                left: gridLeft,
+                                width: gridWidth,
+                                height: gridHeight,
+                                containLabel: false
+                            });
+
+                            if (i === j) {
+                                // 对角线: 显示变量名
+                                xAxisList.push({
+                                    gridIndex: gridIdx,
+                                    type: 'category',
+                                    data: [schema[i].name],
+                                    axisLabel: {
+                                        show: true,
+                                        fontSize: axisLabelFontSize + 2,
+                                        fontWeight: 'bold',
+                                        interval: 0,
+                                        color: '#333'
+                                    },
+                                    axisTick: { show: false },
+                                    axisLine: { show: false },
+                                    splitLine: { show: false }
+                                });
+                                yAxisList.push({
+                                    gridIndex: gridIdx,
+                                    type: 'category',
+                                    data: [''],
+                                    axisLabel: { show: false },
+                                    axisTick: { show: false },
+                                    axisLine: { show: false },
+                                    splitLine: { show: false }
+                                });
+                            } else {
+                                // 计算相关系数以确定颜色
+                                let r = 0;
+                                try {
+                                    const xData = seriesData.map(d => d[j]);
+                                    const yData = seriesData.map(d => d[i]);
+                                    r = pearsonCorrelation(xData, yData);
+                                } catch(e) {
+                                    console.error('计算相关系数时出错', e);
+                                }
+
+                                const color = r > 0.5 ? '#27ae60' : r < -0.5 ? '#e74c3c' : '#3498db';
+
+                                series.push({
+                                    type: 'scatter',
+                                    xAxisIndex: gridIdx,
+                                    yAxisIndex: gridIdx,
+                                    data: retrieveData(seriesData, j, i),
+                                    symbolSize: 8,
+                                    itemStyle: {
+                                        opacity: 0.8,
+                                        color: color
+                                    },
+                                    emphasis: {
+                                        itemStyle: {
+                                            borderColor: '#000',
+                                            borderWidth: 1
+                                        }
+                                    }
+                                });
+
+                                xAxisList.push({
+                                    gridIndex: gridIdx,
+                                    type: 'value',
+                                    splitNumber: 3,
+                                    axisLabel: {
+                                        fontSize: axisLabelFontSize,
+                                        color: '#666'
+                                    },
+                                    axisLine: {
+                                        lineStyle: { color: '#ccc' }
+                                    },
+                                    splitLine: {
+                                        show: true,
+                                        lineStyle: {
+                                            type: 'dashed',
+                                            color: '#eee'
+                                        }
+                                    }
+                                });
+
+                                yAxisList.push({
+                                    gridIndex: gridIdx,
+                                    type: 'value',
+                                    splitNumber: 3,
+                                    axisLabel: {
+                                        fontSize: axisLabelFontSize,
+                                        color: '#666'
+                                    },
+                                    axisLine: {
+                                        lineStyle: { color: '#ccc' }
+                                    },
+                                    splitLine: {
+                                        show: true,
+                                        lineStyle: {
+                                            type: 'dashed',
+                                            color: '#eee'
+                                        }
+                                    }
+                                });
+                            }
+                            gridIdx++;
+                        }
+                    }
+
+                    var option = {
+                        title: {
+                            text: '变量间关系散点图矩阵',
+                            left: 'center',
+                            top: 5,
+                            textStyle: {
+                                fontSize: 16,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: function (params) {
+                                let xDim = '';
+                                let yDim = '';
+                                let seriesCounter = 0;
+                                let targetI = -1, targetJ = -1;
+
+                                for (let r = 0; r < CATEGORY_DIM_COUNT; r++) {
+                                    for (let c = 0; c < CATEGORY_DIM_COUNT; c++) {
+                                        if (r !== c) {
+                                            if (seriesCounter === params.seriesIndex) {
+                                                targetI = r;
+                                                targetJ = c;
+                                                break;
+                                            }
+                                            seriesCounter++;
+                                        }
+                                    }
+                                    if (targetI !== -1) break;
+                                }
+
+                                if(targetI !== -1 && targetJ !== -1 && schema[targetJ] && schema[targetI]){
+                                    xDim = schema[targetJ].name;
+                                    yDim = schema[targetI].name;
+                                    return `<strong>${yDim} vs ${xDim}</strong><br/>
+                                            ${xDim}: ${params.value[0].toFixed(2)}<br/>
+                                            ${yDim}: ${params.value[1].toFixed(2)}`;
+                                }
+                                return `X: ${params.value[0].toFixed(2)}<br/>Y: ${params.value[1].toFixed(2)}`;
+                            },
+                            backgroundColor: 'rgba(255,255,255,0.95)',
+                            borderColor: '#ddd',
+                            borderWidth: 1,
+                            textStyle: {
+                                color: '#333'
+                            }
+                        },
+                        grid: grids,
+                        xAxis: xAxisList,
+                        yAxis: yAxisList,
+                        series: series
+                    };
+
+                    scatterMatrixChart.setOption(option);
+
+                    // 响应窗口变化
+                    window.addEventListener('resize', function() {
+                        scatterMatrixChart.resize();
+                    });
+                })
+                .catch(error => {
+                    console.error('获取或处理散点图数据时出错:', error);
+                    document.getElementById('scatterMatrixChart').innerHTML = `
+                        <div class="alert alert-danger p-4 text-center">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                            <h5>加载图表数据失败</h5>
+                            <p class="mb-0">${error.message}</p>
+                        </div>`;
+                });
+
+            // 计算皮尔逊相关系数
+            function pearsonCorrelation(x, y) {
+                if (x.length !== y.length) {
+                    return 0;
+                }
+                const n = x.length;
+                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+
+                for (let i = 0; i < n; i++) {
+                    sumX += x[i];
+                    sumY += y[i];
+                    sumXY += x[i] * y[i];
+                    sumX2 += x[i] * x[i];
+                    sumY2 += y[i] * y[i];
+                }
+
+                const numerator = n * sumXY - sumX * sumY;
+                const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+                return denominator ? numerator / denominator : 0;
+            }
+        });
+    </script>
+{% endblock %}

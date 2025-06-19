@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Python分析结果 - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active" aria-current="page"><i class="fas fa-images me-1"></i>Python分析结果</li>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .system-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+    }
+    .system-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+    .card-header-system {
+        border-radius: 12px 12px 0 0 !important;
+        font-weight: 600;
+        padding: 15px 20px;
+    }
+    .card-img-top {
+        cursor: zoom-in;
+        transition: transform 0.3s ease;
+    }
+    .card-img-top:hover {
+        transform: scale(1.02);
+    }
+    .analysis-description {
+        background: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="page-header mb-4">
+        <h1 class="display-5 fw-bold text-primary">
+            <i class="fas fa-chart-line me-2"></i>Python 分析结果可视化
+        </h1>
+        <p class="lead">基于2006-2024年人口统计数据，展示出生率、死亡率与自然增长率的分析图表</p>
+    </div>
+
+    <div class="row">
+        {% if images %}
+            {% for image_filename in images %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card system-card h-100">
+                    <div class="card-header-system bg-primary text-white">
+                        <h5 class="card-title mb-0">{{ get_image_title(image_filename) }}</h5>
+                    </div>
+                    <img src="{{ url_for('static', filename='image/' + image_filename) }}"
+                         class="card-img-top p-3"
+                         alt="{{ get_image_title(image_filename) }}"
+                         style="object-fit: contain; height: 250px;"
+                         data-bs-toggle="modal"
+                         data-bs-target="#imageModal{{ loop.index }}">
+                    <div class="card-body">
+                        <p class="card-text small text-muted">文件名: {{ image_filename }}</p>
+                        <div class="analysis-description">
+                            {{ get_image_description(image_filename) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图片模态框 -->
+            <div class="modal fade" id="imageModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{{ get_image_title(image_filename) }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="{{ url_for('static', filename='image/' + image_filename) }}"
+                                 style="max-width: 100%; max-height: 70vh;">
+                            <div class="mt-3 p-3 bg-light rounded">
+                                <h6><i class="fas fa-info-circle me-2 text-primary"></i>图表分析</h6>
+                                <p>{{ get_image_description(image_filename) }}</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col">
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>目前没有可供展示的图片。请确保 `Analysis.py` 已成功运行并在 `image` 文件夹中生成了图片。
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// 图片加载失败处理
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.card-img-top').forEach(img => {
+        img.addEventListener('error', function() {
+            this.src = "{{ url_for('static', filename='image/placeholder.png') }}";
+            console.warn('图片加载失败:', this.dataset.src || this.src);
+        });
+    });
+});
+</script>
+{% endblock %}

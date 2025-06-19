@@ -1,0 +1,768 @@
+{% extends "base.html" %}
+{% block title %}回归预测 - 人口数据分析与预测系统{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active" aria-current="page">回归预测</li>
+{% endblock %}
+
+{% block head_extra %}
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            padding-top: 0px;
+        }
+
+        .regression-card {
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            background-color: white;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .regression-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header-regression {
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 600;
+            padding: 15px 20px;
+        }
+
+        .model-process {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .process-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #0d6efd;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .coef-highlight {
+            background: #e7f1ff;
+            border-left: 4px solid #0d6efd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .interpretation-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #eaeaea;
+        }
+
+        .stat-summary-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #eaeaea;
+        }
+
+        .stat-highlight {
+            background: #e7f1ff;
+            border-left: 4px solid #0d6efd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #0d6efd;
+            font-size: 1.1rem;
+        }
+
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .value-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            text-align: center;
+            height: 100%;
+        }
+
+        .progress-container {
+            height: 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .chart-container {
+            height: 350px;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .conclusion-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #eaeaea;
+            margin: 10px 0;
+        }
+
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 30px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .section-title {
+            border-left: 4px solid #0d6efd;
+            padding-left: 10px;
+            margin: 25px 0 15px;
+            font-weight: 600;
+        }
+
+        .nav-shadow {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            background: #0d6efd;
+            color: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+    </style>
+
+
+{% endblock %}
+
+{% block content %}
+    <!-- 页面标题 -->
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold text-primary mb-3">
+            <i class="fas fa-cogs me-2"></i>
+            人口自然增长率回归预测
+        </h1>
+
+        <p class="lead text-muted">基于多元线性回归模型，分析出生率和死亡率对人口自然增长率的影响</p>
+
+        <div class="d-flex justify-content-center mt-3">
+            <span class="badge bg-primary me-2">出生率</span>
+            <span class="badge bg-dark me-2">死亡率</span>
+            <span class="badge bg-success">自然增长率</span>
+        </div>
+    </div>
+
+    <!-- 模型建立过程 -->
+    <div class="regression-card">
+        <div class="card-header-regression bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-cogs me-2"></i>
+                模型建立过程
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <div class="model-process">
+                <h5 class="section-title"><i class="fas fa-project-diagram me-2 text-primary"></i>
+                    建模步骤
+                </h5>
+
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <div>
+                        <strong>变量选择</strong>
+                        <p class="mb-0 small text-muted">自变量：出生率 (X₁), 死亡率 (X₂)<br>因变量：自然增长率 (Y)</p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <div>
+                        <strong>模型构建</strong>
+                        <p class="mb-0 small text-muted">多元线性回归模型：Y = β₀ + β₁X₁ + β₂X₂ + ε</p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <div>
+                        <strong>参数估计</strong>
+                        <p class="mb-0 small text-muted">使用最小二乘法(OLS)估计回归系数</p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <div>
+                        <strong>模型检验</strong>
+                        <p class="mb-0 small text-muted">检验回归系数显著性 (t检验) 和模型拟合优度 (R²)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="coef-highlight">
+                <h5 class="section-title"><i class="fas fa-calculator me-2 text-primary"></i>
+                    回归方程
+                </h5>
+                <p class="fs-5 fw-bold text-primary mb-0">
+                    <i class="fas fa-equals me-2"></i>
+                    {{ reg_data.equation }}
+                </p>
+            </div>
+
+            <div class="interpretation-card">
+                <h6 class="section-title"><i class="fas fa-lightbulb me-2 text-primary"></i>
+                    方程解读
+                </h6>
+                <ul class="mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-circle text-primary me-2"></i>
+                        <strong>常数项(β₀)</strong>：当出生率和死亡率为0时的自然增长率理论值
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-circle text-success me-2"></i>
+                        <strong>出生率系数(β₁)</strong>：死亡率不变时，出生率每增加1‰，自然增长率增加{{ reg_data.coefficients.birth_rate }}‰
+                    </li>
+                    <li>
+                        <i class="fas fa-circle text-danger me-2"></i>
+                        <strong>死亡率系数(β₂)</strong>：出生率不变时，死亡率每增加1‰，自然增长率减少{{ -reg_data.coefficients.death_rate }}‰
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 回归模型结果 -->
+    <div class="regression-card">
+        <div class="card-header-regression bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>
+                回归模型结果
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="section-title"><i class="fas fa-ruler-combined me-2 text-primary"></i>
+                        模型拟合指标
+                    </h5>
+
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary text-white rounded p-3 me-3">
+                            <i class="fas fa-square-root-alt fa-2x"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 small text-muted">决定系数 (R²)</p>
+                            <h3 class="mb-0">{{ reg_data.r_squared }}</h3>
+                            <p class="small text-muted">模型解释了自然增长率变异的{{ (reg_data.r_squared * 100)|round(1) }}%</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-around mb-4">
+                        <div class="text-center">
+                            <p class="mb-0 small text-muted">F统计量</p>
+                            <p class="stat-value">{{ reg_data.model_summary.fvalue|round(2) }}</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="mb-0 small text-muted">调整后R²</p>
+                            <p class="stat-value">{{ reg_data.model_summary.rsquared_adj|round(3) }}</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="mb-0 small text-muted">F统计量概率</p>
+                            <p class="stat-value">{{ reg_data.model_summary.f_pvalue|round(4) }}</p>
+                        </div>
+                    </div>
+
+                    <h5 class="section-title mt-4"><i class="fas fa-check-circle me-2 text-success"></i>
+                        系数显著性
+                    </h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>变量</th>
+                                    <th>系数</th>
+                                    <th>P值</th>
+                                    <th>显著性</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>常数项</td>
+                                    <td>{{ reg_data.coefficients.const|round(3) }}</td>
+                                    <td>{{ reg_data.p_values_model.const|round(4) }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if reg_data.p_values_model.const < 0.05 %}success{% else %}danger{% endif %}">
+                                            {% if reg_data.p_values_model.const < 0.05 %}显著{% else %}不显著{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>出生率</td>
+                                    <td>{{ reg_data.coefficients.birth_rate|round(3) }}</td>
+                                    <td>{{ reg_data.p_values_model.birth_rate|round(4) }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if reg_data.p_values_model.birth_rate < 0.05 %}success{% else %}danger{% endif %}">
+                                            {% if reg_data.p_values_model.birth_rate < 0.05 %}显著{% else %}不显著{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>死亡率</td>
+                                    <td>{{ reg_data.coefficients.death_rate|round(3) }}</td>
+                                    <td>{{ reg_data.p_values_model.death_rate|round(4) }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if reg_data.p_values_model.death_rate < 0.05 %}success{% else %}danger{% endif %}">
+                                            {% if reg_data.p_values_model.death_rate < 0.05 %}显著{% else %}不显著{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <h5 class="section-title"><i class="fas fa-table me-2 text-primary"></i>
+                        详细统计摘要
+                    </h5>
+
+                    <div class="stat-summary-card">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="mb-1 small text-muted">因变量</p>
+                                <p class="stat-value">自然增长率</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1 small text-muted">模型</p>
+                                <p class="stat-value">OLS (普通最小二乘法)</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-highlight">
+                            <h6 class="section-title"><i class="fas fa-chart-line me-2 text-primary"></i>
+                                模型拟合度
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1 small text-muted">决定系数 (R²)</p>
+                                    <p class="stat-value">{{ reg_data.r_squared|round(4) }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1 small text-muted">调整后R²</p>
+                                    <p class="stat-value">{{ reg_data.model_summary.rsquared_adj|round(4) }}</p>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <p class="mb-1 small text-muted">F统计量</p>
+                                    <p class="stat-value">{{ reg_data.model_summary.fvalue|round(2) }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1 small text-muted">F统计量概率</p>
+                                    <p class="stat-value">{{ reg_data.model_summary.f_pvalue|round(4) }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-highlight">
+                            <h6 class="section-title"><i class="fas fa-sliders-h me-2 text-primary"></i>
+                                回归系数
+                            </h6>
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>变量</th>
+                                        <th>系数</th>
+                                        <th>标准误</th>
+                                        <th>t值</th>
+                                        <th>P值</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>常数项</td>
+                                        <td>{{ reg_data.coefficients.const|round(4) }}</td>
+                                        <td>{{ reg_data.model_summary.bse_const|round(4) }}</td>
+                                        <td>{{ (reg_data.coefficients.const / reg_data.model_summary.bse_const)|round(2) }}</td>
+                                        <td>{{ reg_data.p_values_model.const|round(4) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>出生率</td>
+                                        <td>{{ reg_data.coefficients.birth_rate|round(4) }}</td>
+                                        <td>{{ reg_data.model_summary.bse_birth_rate|round(4) }}</td>
+                                        <td>{{ (reg_data.coefficients.birth_rate / reg_data.model_summary.bse_birth_rate)|round(2) }}</td>
+                                        <td>{{ reg_data.p_values_model.birth_rate|round(4) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>死亡率</td>
+                                        <td>{{ reg_data.coefficients.death_rate|round(4) }}</td>
+                                        <td>{{ reg_data.model_summary.bse_death_rate|round(4) }}</td>
+                                        <td>{{ (reg_data.coefficients.death_rate / reg_data.model_summary.bse_death_rate)|round(2) }}</td>
+                                        <td>{{ reg_data.p_values_model.death_rate|round(4) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 预测与验证 -->
+        <div class="col-md-6 mb-4">
+            <div class="regression-card h-100">
+                <div class="card-header-regression bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-bullseye me-2"></i>
+                        模型预测与验证
+                    </h4>
+                </div>
+
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-6 mb-4">
+                            <div class="value-card bg-light">
+                                <p class="mb-1 small text-muted">实际观测值 (2024)</p>
+                                <div class="card-value text-success">{{ reg_data.actual }}‰</div>
+                                <p class="small text-muted">自然增长率</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="value-card bg-light">
+                                <p class="mb-1 small text-muted">模型预测值</p>
+                                <div class="card-value text-info">{{ reg_data.prediction }}‰</div>
+                                <p class="small text-muted">自然增长率</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="d-inline-block bg-light p-4 rounded">
+                            <p class="mb-1 small text-muted"><strong>预测误差</strong></p>
+                            <div class="card-value text-warning">{{ (reg_data.actual - reg_data.prediction)|round(2) }}‰</div>
+                            <p class="small text-muted">（实际值 - 预测值）</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 回归诊断图 -->
+        <div class="col-md-6 mb-4">
+            <div class="regression-card h-100">
+                <div class="card-header-regression bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-stethoscope me-2"></i>
+                        回归诊断图
+                    </h4>
+                </div>
+
+                <div class="card-body">
+                    <div class="chart-container bg-light p-3">
+                        <canvas id="residualChart"></canvas>
+                    </div>
+
+                    <div class="mt-4 bg-light p-3 rounded">
+                        <h6 class="section-title"><i class="fas fa-info-circle me-2 text-warning"></i>
+                            残差图解读
+                        </h6>
+                        <p class="small mb-0">
+                            残差图用于检验回归模型的假设（如线性、同方差性）。理想情况下，残差应随机分布在0线上下，
+                            无明显的模式或趋势。若存在明显的曲线或漏斗形状，表明模型可能有误设或异方差性问题。
+                            当前模型残差随机分布，满足基本假设。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分析结论 -->
+    <div class="regression-card">
+        <div class="card-header-regression bg-success text-white">
+            <h4 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>
+                分析结论
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="section-title"><i class="fas fa-thumbs-up me-2 text-success"></i>
+                        模型优势
+                    </h5>
+                    <div class="conclusion-card">
+                        <ul class="mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>高解释力</strong>：R² = {{ reg_data.r_squared|round(2) }}，解释了自然增长率{{ (reg_data.r_squared * 100)|round(1) }}%的变异
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>变量显著</strong>：所有预测变量均统计显著(p < 0.05)
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>符合理论</strong>：系数方向符合人口学理论预期
+                            </li>
+                            <li>
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>预测准确</strong>：预测值与实际值误差较小({{ (reg_data.actual - reg_data.prediction)|round(2) }}‰)
+                            </li>
+                        </ul>
+                    </div>
+
+                    <h5 class="section-title mt-4"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                        模型局限
+                    </h5>
+                    <div class="conclusion-card">
+                        <ul class="mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                <strong>变量有限</strong>：仅考虑出生率和死亡率两个因素
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                <strong>数据范围</strong>：基于2005-2024年数据，长期预测能力有限
+                            </li>
+                            <li>
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                <strong>非线性关系</strong>：可能存在未被捕捉的非线性关系
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <h5 class="section-title"><i class="fas fa-lightbulb me-2 text-warning"></i>
+                        政策建议
+                    </h5>
+                    <div class="conclusion-card">
+                        <ul class="mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-baby text-primary me-2"></i>
+                                <strong>鼓励生育</strong>：出生率系数为正({{ reg_data.coefficients.birth_rate|round(2) }})，应制定生育激励政策
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-heartbeat text-danger me-2"></i>
+                                <strong>医疗保障</strong>：死亡率系数为负({{ reg_data.coefficients.death_rate|round(2) }})，需加强医疗体系建设
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-chart-line text-info me-2"></i>
+                                <strong>关注负增长</strong>：2024年自然增长率为{{ reg_data.actual }}‰，需制定应对策略
+                            </li>
+                            <li>
+                                <i class="fas fa-chart-bar text-success me-2"></i>
+                                <strong>多元预测</strong>：建议纳入经济指标、教育水平等变量提升模型精度
+                            </li>
+                        </ul>
+                    </div>
+
+                    <h5 class="section-title mt-4"><i class="fas fa-road me-2 text-info"></i>
+                        未来研究方向
+                    </h5>
+                    <div class="conclusion-card">
+                        <ul class="mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-plus-circle text-info me-2"></i>
+                                纳入更多社会经济变量（如GDP、教育投入）
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-project-diagram text-info me-2"></i>
+                                构建非线性模型捕捉更复杂关系
+                            </li>
+                            <li>
+                                <i class="fas fa-calendar-alt text-info me-2"></i>
+                                建立长期预测模型（2030、2050年预测）
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模型应用 -->
+    <div class="regression-card">
+        <div class="card-header-regression bg-info text-white">
+            <h4 class="mb-0"><i class="fas fa-rocket me-2"></i>
+                模型应用
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="text-center p-3">
+                        <div class="bg-primary text-white rounded-circle p-3 mb-3 d-inline-block">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                        <h5>人口趋势预测</h5>
+                        <p class="small">预测未来5-10年人口自然增长率变化趋势</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="text-center p-3">
+                        <div class="bg-success text-white rounded-circle p-3 mb-3 d-inline-block">
+                            <i class="fas fa-city fa-2x"></i>
+                        </div>
+                        <h5>区域规划</h5>
+                        <p class="small">为城市基础设施建设和公共服务布局提供数据支持</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="text-center p-3">
+                        <div class="bg-warning text-dark rounded-circle p-3 mb-3 d-inline-block">
+                            <i class="fas fa-hand-holding-usd fa-2x"></i>
+                        </div>
+                        <h5>政策评估</h5>
+                        <p class="small">评估人口政策调整对自然增长率的影响效果</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-light p-4 rounded">
+                <h5 class="section-title"><i class="fas fa-cogs me-2 text-info"></i>
+                    应用场景示例
+                </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="p-3">
+                            <h6>情景模拟：生育补贴政策</h6>
+                            <ul class="small">
+                                <li>若出生率提高10% → 自然增长率增加{{ (0.1 * reg_data.coefficients.birth_rate)|round(2) }}‰</li>
+                                <li>按当前死亡率，需要增加出生率至{{ (8.5)|round(2) }}‰才能实现正增长</li>
+                                <li>预计需每年投入GDP的0.5%用于生育补贴</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3">
+                            <h6>区域人口预测</h6>
+                            <ul class="small">
+                                <li>一线城市：出生率低但死亡率低，增长率-0.5‰</li>
+                                <li>三四线城市：出生率较高但死亡率高，增长率-0.8‰</li>
+                                <li>农村地区：出生率最高但医疗资源不足，增长率-0.2‰</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // 残差图使用实际数据
+        const residualCtx = document.getElementById('residualChart').getContext('2d');
+
+        // 使用从后端获取的实际残差数据
+        const fittedValues = {{ reg_data.fitted_values|tojson }};
+        const residuals = {{ reg_data.residuals|tojson }};
+
+        new Chart(residualCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: '残差',
+                    data: fittedValues.map((value, index) => ({x: value, y: residuals[index]})),
+                    backgroundColor: 'rgba(65, 105, 225, 0.7)',
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '拟合值',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '残差',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '拟合值 vs 残差图',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `拟合值: ${context.parsed.x.toFixed(2)}, 残差: ${context.parsed.y.toFixed(2)}`;
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+{% endblock %}

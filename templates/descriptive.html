@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}描述性统计 - 人口数据分析与预测系统{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">描述性统计</li>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">人口数据描述性统计</h1>
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4>统计量表</h4>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                <tr>
+                    <th>统计量</th>
+                    <th>出生率</th>
+                    <th>死亡率</th>
+                    <th>自然增长率</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>样本数</td>
+                    <td>{{ stats.table.birth_rate.count }}</td>
+                    <td>{{ stats.table.death_rate.count }}</td>
+                    <td>{{ stats.table.growth_rate.count }}</td>
+                </tr>
+                <tr>
+                    <td>平均值</td>
+                    <td>{{ stats.table.birth_rate.mean }}</td>
+                    <td>{{ stats.table.death_rate.mean }}</td>
+                    <td>{{ stats.table.growth_rate.mean }}</td>
+                </tr>
+                <tr>
+                    <td>标准差</td>
+                    <td>{{ stats.table.birth_rate.std }}</td>
+                    <td>{{ stats.table.death_rate.std }}</td>
+                    <td>{{ stats.table.growth_rate.std }}</td>
+                </tr>
+                <tr>
+                    <td>最小值</td>
+                    <td>{{ stats.table.birth_rate.min }}</td>
+                    <td>{{ stats.table.death_rate.min }}</td>
+                    <td>{{ stats.table.growth_rate.min }}</td>
+                </tr>
+                <tr>
+                    <td>25%分位数</td>
+                    <td>{{ stats.table.birth_rate['25%'] }}</td>
+                    <td>{{ stats.table.death_rate['25%'] }}</td>
+                    <td>{{ stats.table.growth_rate['25%'] }}</td>
+                </tr>
+                <tr>
+                    <td>中位数</td>
+                    <td>{{ stats.table.birth_rate['50%'] }}</td>
+                    <td>{{ stats.table.death_rate['50%'] }}</td>
+                    <td>{{ stats.table.growth_rate['50%'] }}</td>
+                </tr>
+                <tr>
+                    <td>75%分位数</td>
+                    <td>{{ stats.table.birth_rate['75%'] }}</td>
+                    <td>{{ stats.table.death_rate['75%'] }}</td>
+                    <td>{{ stats.table.growth_rate['75%'] }}</td>
+                </tr>
+                <tr>
+                    <td>最大值</td>
+                    <td>{{ stats.table.birth_rate.max }}</td>
+                    <td>{{ stats.table.death_rate.max }}</td>
+                    <td>{{ stats.table.growth_rate.max }}</td>
+                </tr>
+                <tr>
+                    <td>偏度</td>
+                    <td>{{ stats.skewness.birth_rate }}</td>
+                    <td>{{ stats.skewness.death_rate }}</td>
+                    <td>{{ stats.skewness.growth_rate }}</td>
+                </tr>
+                <tr>
+                    <td>峰度</td>
+                    <td>{{ stats.kurtosis.birth_rate }}</td>
+                    <td>{{ stats.kurtosis.death_rate }}</td>
+                    <td>{{ stats.kurtosis.growth_rate }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4>时间序列图</h4>
+            </div>
+            <div class="card-body">
+                <div id="timeSeriesChart" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h4>箱线图</h4>
+            </div>
+            <div class="card-body">
+                <div id="boxplotChart" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-warning text-dark">
+        <h4>分析结论</h4>
+    </div>
+    <div class="card-body">
+        <ul>
+            <li>出生率呈明显下降趋势（偏度=-0.32，左偏分布）</li>
+            <li>死亡率相对稳定（标准差仅0.28）</li>
+            <li>自然增长率分布呈负偏态（偏度=-1.15），表明多数年份为正值，近年转为负值</li>
+            <li>2024年出生率(6.77‰)创历史新低，低于2005年(12.40‰)近45%</li>
+            <li>死亡率变化较小，2005-2024年间仅增长0.25‰</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 获取图表数据
+    fetch('/chart_data')
+        .then(response => response.json())
+        .then(data => {
+            // 时间序列图
+            const timeSeriesChart = echarts.init(document.getElementById('timeSeriesChart'));
+            const timeOption = {
+                title: {text: '人口指标时间趋势 (2005-2024)'},
+                tooltip: {trigger: 'axis'},
+                legend: {data: ['出生率', '死亡率', '自然增长率']},
+                grid: {left: '3%', right: '4%', bottom: '3%', containLabel: true},
+                xAxis: {type: 'category', data: data.years.reverse()},
+                yAxis: {type: 'value', name: '千分比'},
+                series: [
+                    {
+                        name: '出生率', type: 'line', data: data.birth_rates.reverse(),
+                        lineStyle: {color: '#dc3545'}, itemStyle: {color: '#dc3545'}
+                    },
+                    {
+                        name: '死亡率', type: 'line', data: data.death_rates.reverse(),
+                        lineStyle: {color: '#495057'}, itemStyle: {color: '#495057'}
+                    },
+                    {
+                        name: '自然增长率', type: 'line', data: data.growth_rates.reverse(),
+                        lineStyle: {color: '#0d6efd'}, itemStyle: {color: '#0d6efd'}
+                    }
+                ]
+            };
+            timeSeriesChart.setOption(timeOption);
+
+            // 箱线图
+            const boxplotChart = echarts.init(document.getElementById('boxplotChart'));
+            const boxOption = {
+                title: {
+                    text: '人口指标分布特征（2005-2024）',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function (params) {
+                        const data = params.value;
+                        return `
+                <strong>${params.name}</strong><br/>
+                最小值: ${data[1]}‰<br/>
+                下四分位数(Q1): ${data[2]}‰<br/>
+                中位数: ${data[3]}‰<br/>
+                上四分位数(Q3): ${data[4]}‰<br/>
+                最大值: ${data[5]}‰
+            `;
+                    }
+                },
+                grid: {left: '10%', right: '10%', bottom: '15%'},
+                xAxis: {
+                    type: 'category',
+                    data: ['出生率', '死亡率', '自然增长率'],
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 0,
+                        fontWeight: 'bold'
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '千分比 (‰)',
+                    nameLocation: 'middle',
+                    nameGap: 30
+                },
+                series: [{
+                    name: '箱线图',
+                    type: 'boxplot',
+                    data: [
+                        data.birth_box,
+                        data.death_box,
+                        data.growth_box
+                    ],
+                    itemStyle: {
+                        color: '#0d6efd',      // 箱体填充色
+                        borderColor: '#333',  // 边框颜色
+                        borderWidth: 1
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+            boxplotChart.setOption(boxOption);
+
+            // 响应窗口变化
+            window.addEventListener('resize', () => {
+                timeSeriesChart.resize();
+                boxplotChart.resize();
+            });
+        });
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}关于 - 人口数据分析与预测系统{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">关于本系统</li>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="jumbotron bg-light p-5 rounded-lg mb-4 text-center">
+        <h1 class="display-4">关于本系统</h1>
+        <p class="lead">本系统基于Python Flask框架，结合Pandas、Statsmodels和ECharts库，为您提供专业的人口数据分析、可视化展示及趋势预测功能。</p>
+        <hr class="my-4">
+        <p>旨在提供一个易于使用的人口数据分析平台。</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h2>系统功能</h2>
+            <ul class="list-group mb-4">
+                <li class="list-group-item">描述统计：展示人口关键指标的统计特征，包括均值、中位数、标准差等。</li>
+                <li class="list-group-item">相关分析：探索不同人口指标间的相互关系，通过相关系数矩阵和散点图矩阵直观展示。</li>
+                <li class="list-group-item">回归预测：构建多元线性回归模型，分析影响因素并预测未来趋势。</li>
+            </ul>
+            
+            <h2>技术栈</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>后端技术</h5>
+                    <ul>
+                        <li>Python Flask：Web应用框架</li>
+                        <li>Pandas：数据处理和分析</li>
+                        <li>Statsmodels：统计建模和分析</li>
+                    </ul>
+                    
+                    <h5>前端技术</h5>
+                    <ul>
+                        <li>Bootstrap：响应式界面设计</li>
+                        <li>ECharts：数据可视化图表</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>数据来源</h2>
+            <p class="lead">系统使用的数据来源于公开的人口统计数据，包含出生率、死亡率和自然增长率等关键指标。</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
